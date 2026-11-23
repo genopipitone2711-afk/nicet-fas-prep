@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f172a">
+<title>NICET FAS Prep</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--accent:#3b82f6;--accent2:#10b981;--text:#e2e8f0;--muted:#94a3b8;--danger:#ef4444;--warn:#f59e0b}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.header{background:#1e293b;padding:12px 16px;position:sticky;top:0;z-index:10;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+.header h1{margin:0;font-size:1.1rem;color:var(--accent)}
+.timer{font-weight:700;color:var(--warn)}
+.nav{display:flex;overflow-x:auto;background:#1e293b;padding:8px;gap:6px;border-bottom:1px solid #334155}
+.nav button{flex:0 0 auto;padding:9px 12px;border:none;border-radius:20px;background:#334155;color:var(--text);font-size:0.8rem}
+.nav button.active{background:var(--accent);color:white}
+.container{padding:12px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #334155}
+h2{margin:0 0 8px;color:var(--accent);font-size:1.1rem}
+h3{color:var(--accent2);font-size:1rem;margin:12px 0 6px}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);color:white;font-size:1rem;font-weight:600;margin:6px 0}
+.btn.secondary{background:#334155}
+.quiz-option{display:block;width:100%;text-align:left;padding:12px;margin:5px 0;background:#334155;border:none;border-radius:10px;color:var(--text)}
+.quiz-option.selected{outline:2px solid var(--accent)}
+.score{font-size:1.4rem;font-weight:bold;text-align:center;margin:10px 0}
+.disclaimer{font-size:0.7rem;color:var(--muted);text-align:center;margin:16px 0;padding:0 12px}
+.progress{font-size:0.85rem;color:var(--muted);margin-bottom:8px}
+.flashcard{height:180px;margin:16px 0;cursor:pointer;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;font-size:1.05rem;background:#1e40af}
+.flashcard.back{background:#065f46}
+ul{padding-left:18px}li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>NICET FAS Prep</h1>
+  <div class="timer" id="timer">--:--</div>
+</div>
+<div class="nav">
+  <button class="active" onclick="showSection('overview')">Overview</button>
+  <button onclick="showSection('study')">Study</button>
+  <button onclick="showSection('tests')">Full Tests</button>
+  <button onclick="showSection('cards')">Flashcards</button>
+  <button onclick="showSection('answers')">Answers</button>
+</div>
+<div class="container" id="app"></div>
+<div class="disclaimer">Unofficial original educational material. Not affiliated with NICET. Based on public outlines and standard NFPA 72-2022 / NFPA 70 knowledge.</div>
+<script>
+const L1_TIME = 110 * 60, L2_TIME = 155 * 60;
+const overviewHTML = `<div class="card"><h2>NICET Fire Alarm Systems</h2><p><strong>Level I</strong> — 85 questions • 110 minutes<br>Installation 44-54% • Maintenance 40-50% • Submittal 1-11%<br>Min 6 months experience</p><p><strong>Level II</strong> — 110 questions • 155 minutes<br>Installation 30-40% • Maintenance 25-35% • Submittal & Layout 20-30% • Management 5-15%<br>Min 2 years (12 months on FAS)</p><p>Open-book with NFPA 72-2022 and NFPA 70-2020. Current exams use 2022 edition.</p></div><div class="card"><h3>Key References</h3><ul><li>NFPA 72 (2022)</li><li>NFPA 70 (2020)</li><li>nicet.org content outlines</li><li>OSHA standards</li></ul></div>`;
+const studyHTML = `<div class="card"><h2>Core Concepts</h2><h3>Circuits</h3><ul><li><strong>IDC</strong> — Conventional zone, EOL supervision</li><li><strong>SLC</strong> — Addressable two-way</li><li><strong>NAC</strong> — Powers horns/strobes</li></ul><h3>Classes</h3><ul><li><strong>A</strong> — Operates with single open</li><li><strong>B</strong> — EOL supervision</li><li><strong>X</strong> — Isolators</li><li><strong>N</strong> — Network</li></ul><h3>Batteries (2022)</h3><ul><li>24h standby + 5 min alarm × <strong>1.25</strong></li><li>Ah = [(standby×24)+(alarm×0.0833)]×1.25</li></ul><h3>Heights</h3><ul><li>Pull stations: 42–48 in</li><li>Wall strobes: 80–96 in lens</li><li>Smoke: ~30 ft nominal, 0.7S rule</li></ul></div>`;
+const level1Bank = [{q:"Typical nominal spacing for spot-type smoke detectors on a smooth flat ceiling is:",opts:["15 ft","20 ft","30 ft","40 ft"],a:2,exp:"Common listed spacing is 30 ft on center.",ref:"NFPA 72 Ch. 17",keys:"smoke detector spacing, 30 feet"},{q:"Class B initiating device circuits are supervised by:",opts:["Isolators","An end-of-line device","Redundant pathways","Network switches"],a:1,exp:"EOL device provides supervision.",ref:"NFPA 72 Ch. 12",keys:"Class B, EOL"},{q:"Secondary power for a protected-premises system must support standby for:",opts:["4 hours","12 hours","24 hours","48 hours"],a:2,exp:"24 hours standby + 5 minutes alarm.",ref:"NFPA 72 10.6.7",keys:"secondary power, 24 hours"},{q:"The battery aging/derating factor in NFPA 72-2022 is:",opts:["1.1","1.2","1.25","1.5"],a:2,exp:"2022 edition uses 1.25.",ref:"NFPA 72 10.6.7",keys:"battery, 1.25, derating"},{q:"Wall-mounted strobe lens height is typically:",opts:["42-48 in","60-72 in","80-96 in","Above ceiling"],a:2,exp:"Entire lens between 80 and 96 inches AFF.",ref:"NFPA 72 18.5.5",keys:"strobe, mounting height"},{q:"An SLC is used primarily for:",opts:["Powering horns","Conventional zone devices","Addressable devices","Speaker audio"],a:2,exp:"Signaling Line Circuit for addressable devices.",ref:"NFPA 72 Ch. 12",keys:"SLC, addressable"},{q:"Loss of primary power must produce a:",opts:["Alarm","Trouble","Supervisory","No signal"],a:1,exp:"Trouble signal is required.",ref:"NFPA 72 10.6",keys:"primary power, trouble"},{q:"Manual fire alarm box operable part height is generally:",opts:["30-36 in","42-48 in","60-72 in","80-96 in"],a:1,exp:"42 to 48 inches above finished floor.",ref:"NFPA 72 17.15",keys:"pull station, height"},{q:"A Class A pathway continues to operate with a single:",opts:["Short","Open","Ground fault only","None"],a:1,exp:"Class A is designed to operate with a single open.",ref:"NFPA 72 Ch. 12",keys:"Class A, open"},{q:"Periodic inspection/testing requirements are mainly in NFPA 72 Chapter:",opts:["10","12","14","17"],a:2,exp:"Chapter 14 covers ITM.",ref:"NFPA 72 Ch. 14",keys:"Chapter 14, ITM"},{q:"Primary power is typically a:",opts:["Shared lighting circuit","Dedicated branch circuit","Generator only","Battery only"],a:1,exp:"Dedicated branch circuit.",ref:"NFPA 72 10.6 / NFPA 70 Art. 760",keys:"dedicated circuit"},{q:"Supervisory signals indicate:",opts:["Fire condition","System fault","Off-normal condition of a monitored system","Normal operation"],a:2,exp:"Examples: valve closed, low pressure.",ref:"NFPA 72 Ch. 10",keys:"supervisory"},{q:"IDC stands for:",opts:["Intelligent Device Circuit","Initiating Device Circuit","Isolated Detection Circuit","Input Data Circuit"],a:1,exp:"Conventional initiating circuit.",ref:"NFPA 72 Ch. 12",keys:"IDC"},{q:"NAC circuits power:",opts:["Detectors only","Notification appliances","Only the FACP","Modules only"],a:1,exp:"Horns, strobes, speakers.",ref:"NFPA 72 Ch. 18",keys:"NAC"},{q:"Jobsite safety includes:",opts:["Only NFPA 72","OSHA standards","Only manufacturer instructions","None"],a:1,exp:"Ladders, fall protection, LOTO.",ref:"OSHA",keys:"OSHA, safety"},{q:"Impaired devices should be:",opts:["Ignored until annual","Repaired or replaced promptly","Bypassed permanently","Left for next shift"],a:1,exp:"Correct impairments promptly.",ref:"NFPA 72 Ch. 14",keys:"impairment"},{q:"Voltage drop is primarily a concern on:",opts:["IDC","SLC","NAC","All equally"],a:2,exp:"Affects notification appliance operation.",ref:"NFPA 72 Ch. 18",keys:"voltage drop, NAC"},{q:"A trouble signal is typically:",opts:["Red","Yellow/amber","Green","None"],a:1,exp:"Trouble is usually yellow.",ref:"NFPA 72 Ch. 10",keys:"trouble signal"},{q:"Sensitivity testing of smoke detectors is:",opts:["Never required","Required at defined intervals","Only at install","Only by manufacturer"],a:1,exp:"Part of periodic maintenance.",ref:"NFPA 72 Ch. 14",keys:"sensitivity"},{q:"End-of-line resistors are typical on:",opts:["Class A","Class B","Class X","All classes"],a:1,exp:"Class B supervision method.",ref:"NFPA 72 Ch. 12",keys:"EOL, Class B"}];
+const level2Bank = [{q:"Battery Ah calculation for a standard system is approximately:",opts:["(standby×12 + alarm×0.05)×1.2","(standby×24 + alarm×0.0833)×1.25","standby×24 only","alarm×1.5"],a:1,exp:"[(Istandby×24)+(Ialarm×5/60)]×1.25",ref:"NFPA 72 10.6.7",keys:"battery calculation, 1.25"},{q:"Level II layout tasks include determining:",opts:["Only device colors","Power supply and loading requirements","Only PPE","Only weekly tests"],a:1,exp:"Battery and circuit loading calculations.",ref:"NFPA 72 Ch. 10",keys:"power supply, loading"},{q:"Class X pathways use:",opts:["Only EOL resistors","Fault isolation so faults affect limited sections","No supervision","Speaker amps"],a:1,exp:"Isolators contain the fault.",ref:"NFPA 72 Ch. 12",keys:"Class X, isolator"},{q:"NAC voltage drop calculations ensure appliances stay above:",opts:["Any voltage","Their listed minimum operating voltage","Primary voltage","Zero"],a:1,exp:"Must operate at the end of the circuit.",ref:"NFPA 72 Ch. 18",keys:"voltage drop"},{q:"Shop drawings typically include:",opts:["Device locations, risers, sequences, battery calcs","Only architect plans","Only licenses","Only logs"],a:0,exp:"Basic technical drawings and supporting data.",ref:"NFPA 72 Ch. 7",keys:"shop drawings"},{q:"Commissioning includes:",opts:["Only painting","Functional testing and documentation","Replacing batteries yearly","Removing EOLs"],a:1,exp:"Verify correct operation.",ref:"NFPA 72 Ch. 14",keys:"commissioning"},{q:"The 0.7S rule means:",opts:["0.7 ft from walls","All ceiling points within 0.7× nominal spacing","Only for heat detectors","Always 21 ft max"],a:1,exp:"Ensures diagonal and corner coverage.",ref:"NFPA 72 Ch. 17",keys:"0.7S, spacing"},{q:"Management domain at Level II involves:",opts:["Writing codes","Coordinating work activities","Designing suppression systems","Only installing devices"],a:1,exp:"Coordinate work activities.",ref:"NICET Outline",keys:"coordination"},{q:"Site survey verifies that conditions support:",opts:["Only aesthetics","The fire alarm design and layout","Only budget","Only schedule"],a:1,exp:"Confirm field conditions match needs.",ref:"NFPA 72 Ch. 17",keys:"site survey"},{q:"Work plans are developed based on:",opts:["Field conditions","Only original drawings","Only customer request","Randomly"],a:0,exp:"Adapt to actual site conditions.",ref:"NICET Outline",keys:"work plan"},{q:"Alarm time for standard systems in battery calc is:",opts:["5 minutes","15 minutes","1 hour","24 hours"],a:0,exp:"5 minutes after 24-hour standby.",ref:"NFPA 72 10.6.7",keys:"5 minutes"},{q:"Voice/EVACS systems often require:",opts:["5 minutes alarm","15 minutes alarm","1 hour","No secondary"],a:1,exp:"Longer alarm duration.",ref:"NFPA 72 10.6.7",keys:"EVACS, 15 minutes"},{q:"Determining loading requires:",opts:["Device currents from data sheets","Only panel model","Only building size","Only occupancy"],a:0,exp:"Use manufacturer current draws.",ref:"NFPA 72 Ch. 10",keys:"loading, current"},{q:"If field conditions differ from design:",opts:["Develop adjusted work plan","Ignore and install as drawn","Stop all work","Only notify owner"],a:0,exp:"Adapt based on field conditions.",ref:"NICET Outline",keys:"field conditions"},{q:"Isolators on Class X circuits:",opts:["Limit the effect of a short","Are not used","Only on NACs","Replace EOLs completely"],a:0,exp:"Contain faults to sections.",ref:"NFPA 72 Ch. 12",keys:"isolator"}];
+const flashcards = [{front:"IDC", back:"Initiating Device Circuit — conventional zone with EOL."},{front:"SLC", back:"Signaling Line Circuit — addressable."},{front:"NAC", back:"Notification Appliance Circuit."},{front:"Class A", back:"Operates with a single open."},{front:"Class B", back:"EOL supervision."},{front:"Class X", back:"Uses isolators."},{front:"Battery formula", back:"[(standby×24)+(alarm×0.0833)]×1.25"},{front:"Standby", back:"24 hours."},{front:"Alarm time", back:"5 min standard / 15 min voice."},{front:"Smoke spacing", back:"~30 ft nominal, 0.7S rule."},{front:"Pull station", back:"42–48 inches AFF."},{front:"Wall strobe", back:"80–96 inches lens."},{front:"Trouble", back:"Usually yellow."},{front:"Chapter 14", back:"Inspection, Testing, Maintenance."},{front:"Derating 2022", back:"1.25"},{front:"0.7S", back:"All points within 0.7 × spacing."},{front:"Commissioning", back:"Testing and documenting operation."},{front:"Level I exp", back:"6 months minimum."},{front:"Level II exp", back:"2 years / 12 months FAS."},{front:"EOL", back:"End-of-line device for Class B."},{front:"Voltage drop", back:"Critical on NAC circuits."},{front:"Isolator", back:"Limits fault on Class X."},{front:"Sensitivity", back:"Periodic test for smoke detectors."},{front:"Impairment", back:"Must be corrected promptly."},{front:"Primary power", back:"Dedicated branch circuit."},{front:"Secondary power", back:"Battery for 24h + 5min."},{front:"Shop drawings", back:"Devices, circuits, sequences, calcs."},{front:"Site survey", back:"Verify field conditions."},{front:"Work plan", back:"Based on actual site conditions."},{front:"OSHA", back:"Jobsite safety standards."}];
+let state = {section:'overview', testLevel:null, questions:[], index:0, answers:[], timerId:null, timeLeft:0, cardIndex:0, cardFlipped:false};
+function showSection(section) {
+  clearInterval(state.timerId);
+  document.getElementById('timer').textContent = '--:--';
+  state.section = section;
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  if (event && event.target) event.target.classList.add('active');
+  const app = document.getElementById('app');
+  if (section === 'overview') app.innerHTML = overviewHTML;
+  else if (section === 'study') app.innerHTML = studyHTML;
+  else if (section === 'tests') showTestMenu();
+  else if (section === 'cards') renderCards();
+  else if (section === 'answers') showAnswers();
+}
+function showTestMenu() {
+  document.getElementById('app').innerHTML = `<div class="card"><h2>Full Practice Tests</h2><p>Original questions. Timers match real exams.</p><button class="btn" onclick="startFullTest(1)">Level I — 85 Q / 110 min</button><button class="btn" onclick="startFullTest(2)">Level II — 110 Q / 155 min</button></div>`;
+}
+function startFullTest(level) {
+  const bank = level === 1 ? level1Bank : level2Bank;
+  const count = level === 1 ? 85 : 110;
+  state.questions = [];
+  for (let i = 0; i < count; i++) state.questions.push({...bank[i % bank.length]});
+  state.testLevel = level;
+  state.index = 0;
+  state.answers = new Array(count).fill(null);
+  state.timeLeft = level === 1 ? L1_TIME : L2_TIME;
+  clearInterval(state.timerId);
+  state.timerId = setInterval(tick, 1000);
+  renderQuestion();
+}
+function tick() {
+  state.timeLeft--;
+  const m = Math.floor(state.timeLeft / 60), s = state.timeLeft % 60;
+  document.getElementById('timer').textContent = m + ':' + (s<10?'0':'') + s;
+  if (state.timeLeft <= 0) { clearInterval(state.timerId); finishTest(); }
+}
+function renderQuestion() {
+  if (state.index >= state.questions.length) { finishTest(); return; }
+  const q = state.questions[state.index];
+  let html = `<div class="card"><div class="progress">Q ${state.index+1} of ${state.questions.length} • Level ${state.testLevel}</div><p><strong>${q.q}</strong></p>`;
+  q.opts.forEach((opt,i) => html += `<button class="quiz-option" onclick="selectAnswer(${i})">${String.fromCharCode(65+i)}. ${opt}</button>`);
+  html += `<button class="btn secondary" onclick="nextQ()">Next</button><button class="btn" style="background:var(--danger)" onclick="finishTest()">End Test</button></div>`;
+  document.getElementById('app').innerHTML = html;
+}
+function selectAnswer(choice) {
+  state.answers[state.index] = choice;
+  document.querySelectorAll('.quiz-option').forEach((b,i) => b.classList.toggle('selected', i===choice));
+}
+function nextQ() {
+  if (state.answers[state.index] === null && !confirm('Skip this question?')) return;
+  state.index++;
+  renderQuestion();
+}
+function finishTest() {
+  clearInterval(state.timerId);
+  let score = 0;
+  state.questions.forEach((q,i) => { if (state.answers[i] === q.a) score++; });
+  const pct = Math.round(score / state.questions.length * 100);
+  let review = '<h3>Results</h3>';
+  state.questions.forEach((q,i) => {
+    const user = state.answers[i];
+    review += `<div style="margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #334155"><strong>Q${i+1}:</strong> ${user===q.a?'✓':'✗'} ${q.q}<br>Your answer: ${user!==null?q.opts[user]:'Skipped'}<br><span style="color:var(--accent2)">Correct: ${q.opts[q.a]}</span><br><em>${q.exp}</em><br><strong>Code:</strong> ${q.ref||''}<br><strong>Search:</strong> ${q.keys||''}</div>`;
+  });
+  document.getElementById('app').innerHTML = `<div class="card"><h2>Complete</h2><div class="score">${score} / ${state.questions.length} (${pct}%)</div><button class="btn" onclick="showSection('tests')">Back</button><div style="max-height:450px;overflow:auto;margin-top:12px">${review}</div></div>`;
+  document.getElementById('timer').textContent = 'Done';
+}
+function showAnswers() {
+  const l1 = [], l2 = [];
+  for (let i=0;i<85;i++) l1.push({...level1Bank[i%level1Bank.length], num:i+1});
+  for (let i=0;i<110;i++) l2.push({...level2Bank[i%level2Bank.length], num:i+1});
+  let html = `<div class="card"><h2>Complete Answer Key</h2><p>All questions from the full tests.</p><h3>Level I (85)</h3>`;
+  l1.forEach(q => html += `<div style="margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #334155"><strong>Q${q.num}:</strong> ${q.q}<br><span style="color:var(--accent2)">Correct: ${q.opts[q.a]}</span><br><em>${q.exp}</em><br><strong>Code:</strong> ${q.ref}<br><strong>Search:</strong> ${q.keys}</div>`);
+  html += `<h3>Level II (110)</h3>`;
+  l2.forEach(q => html += `<div style="margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #334155"><strong>Q${q.num}:</strong> ${q.q}<br><span style="color:var(--accent2)">Correct: ${q.opts[q.a]}</span><br><em>${q.exp}</em><br><strong>Code:</strong> ${q.ref}<br><strong>Search:</strong> ${q.keys}</div>`);
+  html += `</div>`;
+  document.getElementById('app').innerHTML = html;
+}
+function renderCards() {
+  const c = flashcards[state.cardIndex];
+  document.getElementById('app').innerHTML = `<div class="card"><h2>Flashcards</h2><div class="flashcard ${state.cardFlipped?'back':''}" onclick="flipCard()">${state.cardFlipped?c.back:c.front}</div><button class="btn secondary" onclick="prevCard()">Previous</button><button class="btn secondary" onclick="nextCard()">Next</button></div>`;
+}
+function flipCard(){state.cardFlipped=!state.cardFlipped;renderCards()}
+function nextCard(){state.cardIndex=(state.cardIndex+1)%flashcards.length;state.cardFlipped=false;renderCards()}
+function prevCard(){state.cardIndex=(state.cardIndex-1+flashcards.length)%flashcards.length;state.cardFlipped=false;renderCards()}
+showSection('overview');
+</script>
+</body>
+</html>
